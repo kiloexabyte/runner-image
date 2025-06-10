@@ -1,0 +1,39 @@
+name: Build Docker Image on PR
+
+on:
+  pull_request:
+    branches:
+      [ main ]
+    paths-ignore:
+      - "**.md"
+  workflow_dispatch:
+
+jobs:
+    build:
+      runs-on: ubuntu-latest
+      # container: 
+      #   image:
+      steps:
+      - name: Clone repo into subdirectory
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git clone --depth=1 --branch "${{ github.event.pull_request.head.ref }}" https://github.com/${{ github.repository }} repo
+            echo "Cloned PR branch: ${{ github.event.pull_request.head.ref }}"
+          else
+            git clone --depth=1 --branch "${{ github.ref_name }}" https://github.com/${{ github.repository }} repo
+            echo "Cloned branch: ${{ github.ref_name }}"
+          fi
+          cd repo
+          ls -lah
+
+      - name: Lint ops
+        run: |
+          cd repo
+          ls -lah
+          op lint
+            
+      - name: Build Docker image
+        run: |
+          cd repo
+          ls -lah
+          op build

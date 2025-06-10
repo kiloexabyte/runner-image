@@ -1,0 +1,6 @@
+.ops
+.github
+*.env
+*.md
+.gitignore
+*.yml
