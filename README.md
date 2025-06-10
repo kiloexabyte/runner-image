@@ -2,7 +2,7 @@
 Image definition: [Dockerfile](Dockerfile)
 
 
-Image url: https://hub.docker.com/u/kiloexabyte
+Image url: https://hub.docker.com/repository/docker/kiloexabyte/runner-image/general
 
 
 ## Tools Installed
