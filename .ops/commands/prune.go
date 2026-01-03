@@ -1,20 +1,22 @@
 package commands
 
 import (
+	"context"
 	"log"
 
-	"lesiw.io/cmdio/sys"
+	"lesiw.io/command"
+	"lesiw.io/command/sys"
 )
 
 func (Ops) Prune() {
-	var rnr = sys.Runner()
+	ctx := context.Background() 
+	sh := command.Shell(sys.Machine(), "docker")
 
-	defer rnr.Close()
-
-	// Prune unused Docker images
-	// Note: does not remove images that are tagged with "latest"
-	err := rnr.Run("docker", "image", "prune", "-f")
-	if err != nil {
-		log.Fatal(err)
-	}
+	if err := sh.Exec(ctx, 
+		"docker", 
+		"image", 
+		"prune", 
+		"-f"); err != nil {
+    	log.Fatal(err)
+    }
 }

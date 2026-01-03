@@ -1,24 +1,30 @@
 package commands
 
 import (
+	"context"
 	"log"
 
-	"lesiw.io/cmdio/sys"
+	"lesiw.io/command"
+	"lesiw.io/command/sys"
 )
 
 func (Ops) Build() {
-	var rnr = sys.Runner()
-	defer rnr.Close()
-	var err error
+	ctx := context.Background() 
+	sh := command.Shell(sys.Machine(), "docker")
 
-	err = rnr.Run("docker", "build", "-t", "kiloexabyte/runner-image", ".")
-	if err != nil {
-		log.Fatal(err)
-	}
+	if err := sh.Exec(ctx, "docker", 
+		"build", 
+		"-t", 
+		"kiloexabyte/runner-image", "."); err != nil {
+    	log.Fatal(err)
+    }
 
-	err = rnr.Run("docker", "images", "kiloexabyte/runner-image", 
-		"--format", "Image Size: {{.Size}}")
-	if err != nil {
-		log.Fatal(err)
-	}
+	if err := sh.Exec(ctx, "docker",
+		"images",
+		"kiloexabyte/runner-image",
+		"--format", 
+		"Image Size: {{.Size}}"); err != nil {
+
+    	log.Fatal(err)
+    }
 }
