@@ -18,6 +18,8 @@ RUN apk add --no-cache \
     tar \
     zip \
     aws-cli \
+    gcc \
+    musl-dev \
  && curl -LO https://golang.org/dl/go${GOLANG_VERSION}.linux-amd64.tar.gz \
  && tar -C /usr/local -xzf go${GOLANG_VERSION}.linux-amd64.tar.gz \
  && rm go${GOLANG_VERSION}.linux-amd64.tar.gz \
