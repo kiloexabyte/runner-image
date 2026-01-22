@@ -1,19 +1,32 @@
 package commands
 
 import (
+	"context"
 	"log"
+	"os"
+	"path/filepath"
 
-	"lesiw.io/cmdio/sys"
+	"lesiw.io/command"
+	"lesiw.io/command/sys"
+	"lesiw.io/fs"
 )
 
 func (Ops) Lint() {
-	var rnr = sys.Runner().WithEnv(map[string]string{
-		"PWD":	"./.ops",
-	})
-	defer rnr.Close()
+	ctx := context.Background()
 
-	err := rnr.Run("golangci-lint", "run")
+	wd, err := os.Getwd()
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	opsDir := filepath.Join(wd, ".ops")
+
+	machine := sys.Machine()
+	sh := command.Shell(machine, "golangci-lint")
+
+	ctx = fs.WithWorkDir(ctx, opsDir)
+
+	if err := sh.Exec(ctx, "golangci-lint", "run"); err != nil {
 		log.Fatal(err)
 	}
 }
