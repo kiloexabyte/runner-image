@@ -1,44 +1,59 @@
 package commands
 
 import (
+	"context"
+	"io"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/joho/godotenv"
-	"lesiw.io/cmdio"
-	"lesiw.io/cmdio/sys"
+	"lesiw.io/command"
+	"lesiw.io/command/sys"
 )
 
 func init() {
-	err := godotenv.Load()
-	if err != nil {
+	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found")
 		log.Println("Skipping loading .env file")
 	}
 }
 
 func (Ops) Upload() {
-	var rnr = sys.Runner().WithEnv(map[string]string{
-		"DOCKER_USERNAME": os.Getenv("DOCKER_USERNAME"),
-		"DOCKER_PASSWORD": os.Getenv("DOCKER_PASSWORD"),
-	})
-	defer rnr.Close()
-	var err error
-	
-	err = cmdio.Pipe(
-		strings.NewReader(rnr.Env("DOCKER_PASSWORD")),
-		rnr.Command("docker", "login",
-			"-u", rnr.Env("DOCKER_USERNAME"),
-			"--password-stdin",
-		),
+	// Read env vars once
+	user := os.Getenv("DOCKER_USERNAME")
+	pass := os.Getenv("DOCKER_PASSWORD")
+
+	// Build a context with environment variables
+	ctx := context.Background()
+	envVars := map[string]string{
+		"DOCKER_USERNAME": user,
+		"DOCKER_PASSWORD": pass,
+	}
+	ctx = command.WithEnv(ctx, envVars)
+
+	m := sys.Machine()
+
+	// 1) docker login --password-stdin
+	// Create a writer command for docker login
+	loginStdin := command.NewWriter(ctx, m,
+		"docker", "login",
+		"-u", user,
+		"--password-stdin",
 	)
-	if err != nil {
+
+	// Pipe the password into stdin
+	if _, err := io.Copy(loginStdin, strings.NewReader(pass)); err != nil {
 		log.Fatal(err)
 	}
 
-	err = rnr.Run("docker", "push", "kiloexabyte/runner-image:latest")
-	if err != nil {
+	// Close stdin and wait for the command to finish
+	if err := loginStdin.Close(); err != nil {
+		log.Fatal(err)
+	}
+
+	// 2) docker push
+	if err := command.Do(ctx, m, "docker", "push", "kiloexabyte/runner-image:latest"); err != nil {
 		log.Fatal(err)
 	}
 }

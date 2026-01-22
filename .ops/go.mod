@@ -18,7 +18,6 @@ require (
 )
 
 require (
-	lesiw.io/cmdio v0.10.0
 	lesiw.io/defers v0.9.0 // indirect
 	lesiw.io/flag v0.7.0 // indirect
 )
