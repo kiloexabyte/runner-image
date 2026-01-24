@@ -53,7 +53,9 @@ func (Ops) Upload() {
 	}
 
 	// 2) docker push
-	if err := command.Do(ctx, m, "docker", "push", "kiloexabyte/runner-image:latest"); err != nil {
+	if err := command.Do(ctx, m, "docker", 
+		"push",
+		"kiloexabyte/runner-image:latest"); err != nil {
 		log.Fatal(err)
 	}
 }
