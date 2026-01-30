@@ -23,7 +23,10 @@ func (Ops) Deleteimage() {
 	tag := os.Getenv("IMAGE_TAG")
 
 	if tag == "" {
-		log.Fatal("Please provide a tag with -tag flag (e.g., op deleteimage -tag PR32)")
+		log.Fatal(
+			"Please provide a tag with -tag flag " +
+				"(e.g., op deleteimage -tag PR32)",
+		)
 	}
 
 	// Read env vars
@@ -58,9 +61,18 @@ func (Ops) Deleteimage() {
 	imageTag := "kiloexabyte/runner-image:" + tag
 	log.Printf("Deleting image: %s\n", imageTag)
 
-	if err := command.Do(ctx, m, "curl", "-X", "DELETE",
+	url := "https://hub.docker.com/v2/repositories/" +
+		"kiloexabyte/runner-image/tags/" +
+		tag + "/"
+
+	if err := command.Do(
+		ctx,
+		m,
+		"curl",
+		"-X", "DELETE",
 		"-H", "Authorization: Bearer "+pass,
-		"https://hub.docker.com/v2/repositories/kiloexabyte/runner-image/tags/"+tag+"/"); err != nil {
+		url,
+	); err != nil {
 		log.Fatal(err)
 	}
 
