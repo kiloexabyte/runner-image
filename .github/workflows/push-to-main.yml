@@ -27,4 +27,4 @@ jobs:
             DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           run: |
             cd repo
-            op buildandupload
+            op build_and_upload
