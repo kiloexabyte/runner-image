@@ -26,4 +26,4 @@ jobs:
             DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           run: |
             cd repo
-            op deleteimage
+            op delete_image

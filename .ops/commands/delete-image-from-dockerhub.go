@@ -19,7 +19,7 @@ func init() {
 	}
 }
 
-func (Ops) Deleteimage() {
+func (Ops) DeleteImage() {
 	tag := os.Getenv("IMAGE_TAG")
 
 	if tag == "" {
