@@ -2,8 +2,10 @@ package commands
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 
@@ -19,6 +21,59 @@ func init() {
 	}
 }
 
+func fetchDockerToken() string {
+	user := os.Getenv("DOCKER_USERNAME")
+	pass := os.Getenv("DOCKER_PASSWORD")
+
+	if user == "" || pass == "" {
+		log.Fatal("DOCKER_USERNAME or DOCKER_PASSWORD is not set")
+	}
+
+	body := strings.NewReader(
+		`{"username":"` + user + `","password":"` + pass + `"}`,
+	)
+
+	req, err := http.NewRequest(
+		"POST",
+		"https://hub.docker.com/v2/users/login/",
+		body,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		log.Fatalf(
+			"Docker Hub auth failed: %s (%s)",
+			resp.Status,
+			strings.TrimSpace(string(b)),
+		)
+	}
+
+	var result struct {
+		Token string `json:"token"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		log.Fatal(err)
+	}
+
+	if result.Token == "" {
+		log.Fatal("Docker Hub returned an empty token")
+	}
+
+	return result.Token
+}
+
 func (Ops) DeleteImage() {
 	tag := os.Getenv("IMAGE_TAG")
 
@@ -29,33 +84,10 @@ func (Ops) DeleteImage() {
 		)
 	}
 
-	// Read env vars
-	user := os.Getenv("DOCKER_USERNAME")
-	pass := os.Getenv("DOCKER_PASSWORD")
-
 	ctx := context.Background()
-	envVars := map[string]string{
-		"DOCKER_USERNAME": user,
-		"DOCKER_PASSWORD": pass,
-	}
-	ctx = command.WithEnv(ctx, envVars)
 
 	m := sys.Machine()
-
-	// Docker login
-	loginStdin := command.NewWriter(ctx, m,
-		"docker", "login",
-		"-u", user,
-		"--password-stdin",
-	)
-
-	if _, err := io.Copy(loginStdin, strings.NewReader(pass)); err != nil {
-		log.Fatal(err)
-	}
-
-	if err := loginStdin.Close(); err != nil {
-		log.Fatal(err)
-	}
+	token := fetchDockerToken()
 
 	// Delete image from Docker Hub using registry API
 	imageTag := "kiloexabyte/runner-image:" + tag
@@ -70,7 +102,7 @@ func (Ops) DeleteImage() {
 		m,
 		"curl",
 		"-X", "DELETE",
-		"-H", "Authorization: Bearer "+pass,
+		"-H", "Authorization: Bearer "+token,
 		url,
 	); err != nil {
 		log.Fatal(err)
