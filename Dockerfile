@@ -36,3 +36,8 @@ RUN go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
 
 # Display versions during build
 RUN go version && node -v
+
+# Clean up caches to reduce image size
+RUN go clean -cache -modcache \
+ && npm cache clean --force \
+ && rm -rf /var/cache/apk/*

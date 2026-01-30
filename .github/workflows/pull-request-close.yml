@@ -1,18 +1,17 @@
-name: Build and Push Docker Image
+name: On PR Closed
 
 on:
-  push:
-    branches:
-      [ main ]
-    paths-ignore:
-      - "**.md"
-  workflow_dispatch:
+  pull_request:
+    types:
+      - closed
 
 jobs:
-    build-and-upload:
+    delete-image:
         runs-on: ubuntu-latest
         container: 
           image: kiloexabyte/runner-image
+        env:
+            IMAGE_TAG: ${{ format('PR{0}', github.event.pull_request.number) }}
         steps:
         - name: Clone repo into subdirectory
           run: |
@@ -21,10 +20,10 @@ jobs:
             git checkout ${{ github.ref_name }}
             ls -lah
 
-        - name: Upload Docker Image to Docker Hub
+        - name: Delete Image to Docker Hub
           env: 
             DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
             DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           run: |
             cd repo
-            op buildandupload
+            op delete_image

@@ -53,9 +53,15 @@ func (Ops) Upload() {
 	}
 
 	// 2) docker push
-	if err := command.Do(ctx, m, "docker", 
+	tag := os.Getenv("IMAGE_TAG")
+	if tag == "" {
+		tag = "latest"
+	}
+	imageTag := "kiloexabyte/runner-image:" + tag
+
+	if err := command.Do(ctx, m, "docker",
 		"push",
-		"kiloexabyte/runner-image:latest"); err != nil {
+		imageTag); err != nil {
 		log.Fatal(err)
 	}
 }

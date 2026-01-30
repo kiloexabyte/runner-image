@@ -1,4 +1,4 @@
-name: Build Docker Image on PR
+name: On PR Opened
 
 on:
   pull_request:
@@ -13,6 +13,8 @@ jobs:
       runs-on: ubuntu-latest
       container: 
         image: kiloexabyte/runner-image
+      env:
+        IMAGE_TAG: ${{ format('PR{0}', github.event.pull_request.number) }}
       steps:
       - name: Clone repo into subdirectory
         run: |
@@ -37,3 +39,11 @@ jobs:
           cd repo
           ls -lah
           op build
+
+      - name: Upload Docker image to Docker Hub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          cd repo
+          op upload
