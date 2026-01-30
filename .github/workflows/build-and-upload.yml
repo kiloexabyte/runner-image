@@ -6,9 +6,6 @@ on:
       [ main ]
     paths-ignore:
       - "**.md"
-  pull_request:
-    paths-ignore:
-      - "**.md"
   workflow_dispatch:
 
 jobs:
@@ -21,19 +18,13 @@ jobs:
           run: |
             git clone --depth=1 https://github.com/${{ github.repository }} repo
             cd repo
-            if [ "${{ github.event_name }}" = "pull_request" ]; then
-              git fetch origin ${{ github.event.pull_request.head.sha }} --depth=1
-              git checkout ${{ github.event.pull_request.head.sha }}
-            else
-              git checkout ${{ github.ref_name }}
-            fi
+            git checkout ${{ github.ref_name }}
             ls -lah
 
         - name: Upload Docker Image to Docker Hub
           env: 
             DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
             DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-            IMAGE_TAG: ${{ github.event_name == 'pull_request' && format('PR{0}', github.event.pull_request.number) || 'latest' }}
           run: |
             cd repo
             op buildandupload
