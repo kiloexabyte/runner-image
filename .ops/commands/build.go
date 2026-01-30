@@ -2,14 +2,13 @@ package commands
 
 import (
 	"context"
-	"log"
 	"os"
 
 	"lesiw.io/command"
 	"lesiw.io/command/sys"
 )
 
-func (Ops) Build() {
+func (Ops) Build() error {
 	ctx := context.Background()
 	sh := command.Shell(sys.Machine(), "docker")
 
@@ -23,7 +22,7 @@ func (Ops) Build() {
 		"build",
 		"-t",
 		imageTag, "."); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	if err := sh.Exec(ctx, "docker",
@@ -32,6 +31,8 @@ func (Ops) Build() {
 		"--format",
 		"Image Size: {{.Size}}"); err != nil {
 
-		log.Fatal(err)
+		return err
 	}
+
+	return nil
 }
