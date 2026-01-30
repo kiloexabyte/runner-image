@@ -1,5 +1,4 @@
-name: Build Docker Image on PR
-
+name: On PR Opened
 on:
   pull_request:
     branches:
