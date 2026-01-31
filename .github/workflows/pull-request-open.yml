@@ -37,10 +37,11 @@ jobs:
         run: |
           ls -lah
           op lint
-
+            
       - name: Upload Docker Image to Docker Hub
         env: 
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
+          cd repo
           op build_and_upload

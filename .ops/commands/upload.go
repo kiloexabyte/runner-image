@@ -19,7 +19,7 @@ func init() {
 	}
 }
 
-func (Ops) Upload() {
+func (Ops) Upload() error {
 	// Read env vars once
 	user := os.Getenv("DOCKER_USERNAME")
 	pass := os.Getenv("DOCKER_PASSWORD")
@@ -44,12 +44,12 @@ func (Ops) Upload() {
 
 	// Pipe the password into stdin
 	if _, err := io.Copy(loginStdin, strings.NewReader(pass)); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	// Close stdin and wait for the command to finish
 	if err := loginStdin.Close(); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	// 2) docker push
@@ -62,6 +62,8 @@ func (Ops) Upload() {
 	if err := command.Do(ctx, m, "docker",
 		"push",
 		imageTag); err != nil {
-		log.Fatal(err)
+		return err
 	}
+	
+	return nil
 }
