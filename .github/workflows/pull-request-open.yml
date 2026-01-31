@@ -9,31 +9,31 @@ on:
   workflow_dispatch:
 
 jobs:
-    build:
-      runs-on: ubuntu-latest
-      container: 
-        image: kiloexabyte/runner-image
-      env:
-        IMAGE_TAG: ${{ format('PR{0}', github.event.pull_request.number) }}
-      steps:
-      - name: Clone repo into subdirectory
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git clone --depth=1 --branch "${{ github.event.pull_request.head.ref }}" https://github.com/${{ github.repository }} repo
-            echo "Cloned PR branch: ${{ github.event.pull_request.head.ref }}"
-          else
-            git clone --depth=1 --branch "${{ github.ref_name }}" https://github.com/${{ github.repository }} repo
-            echo "Cloned branch: ${{ github.ref_name }}"
-          fi
-          cd repo
-          ls -lah
+  build:
+    runs-on: ubuntu-latest
+    container: 
+      image: kiloexabyte/runner-image
+    env:
+      IMAGE_TAG: ${{ format('PR{0}', github.event.pull_request.number) }}
+    steps:
+    - name: Clone repo into subdirectory
+      run: |
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          git clone --depth=1 --branch "${{ github.event.pull_request.head.ref }}" https://github.com/${{ github.repository }} repo
+          echo "Cloned PR branch: ${{ github.event.pull_request.head.ref }}"
+        else
+          git clone --depth=1 --branch "${{ github.ref_name }}" https://github.com/${{ github.repository }} repo
+          echo "Cloned branch: ${{ github.ref_name }}"
+        fi
+        cd repo
+        ls -lah
 
-      - name: Lint ops, build and upload Docker image
-        env: 
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        run: |
-          cd repo
-          ls -lah
-          op lint
-          op build_and_upload
+    - name: Lint ops, build and upload Docker image
+      env: 
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        cd repo
+        ls -lah
+        op lint
+        op build_and_upload
