@@ -12,7 +12,7 @@ jobs:
   build-and-upload:
     runs-on: ubuntu-latest
     container: 
-      image: kiloexabyte/runner-image
+      image: kiloexabyte/runner-image:latest
     steps:
     - name: Clone repo into subdirectory
       run: |
@@ -28,4 +28,3 @@ jobs:
       run: |
         cd repo
         op build_and_upload
-        

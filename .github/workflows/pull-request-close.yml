@@ -9,7 +9,7 @@ jobs:
   delete-image:
     runs-on: ubuntu-latest
     container: 
-      image: kiloexabyte/runner-image
+      image: kiloexabyte/runner-image:latest
     env:
         IMAGE_TAG: ${{ format('PR{0}', github.event.pull_request.number) }}
     steps:
