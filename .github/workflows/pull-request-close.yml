@@ -14,7 +14,6 @@ jobs:
         IMAGE_TAG: ${{ format('PR{0}', github.event.pull_request.number) }}
     steps:
     - uses: actions/checkout@v4
-
     - name: Delete Image to Docker Hub
       env: 
         GOFLAGS: -buildvcs=false

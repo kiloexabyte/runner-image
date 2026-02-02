@@ -15,7 +15,6 @@ jobs:
       image: kiloexabyte/runner-image:latest
     steps:
     - uses: actions/checkout@v4
-
     - name: Upload Docker Image to Docker Hub
       env: 
         GOFLAGS: -buildvcs=false
