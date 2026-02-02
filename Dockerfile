@@ -26,18 +26,13 @@ RUN apk add --no-cache \
  && mkdir -p /go/src /go/bin /go/pkg \
  && wget https://releases.hashicorp.com/terraform/1.8.4/terraform_1.8.4_linux_amd64.zip \
  && unzip terraform_1.8.4_linux_amd64.zip -d /usr/local/bin \
- && rm terraform_1.8.4_linux_amd64.zip
-
-# Install the 'op' tool
-RUN go install lesiw.io/op@latest
-
-# Install the 'golangci-lint' tool
-RUN go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
-
-# Display versions during build
-RUN go version && node -v
-
-# Clean up caches to reduce image size
-RUN go clean -cache -modcache \
+ && rm terraform_1.8.4_linux_amd64.zip \
+ # Install the 'op' tool
+ && go install lesiw.io/op@latest \
+ && go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6 \
+ # Display versions during build
+ && go version && node -v \
+ # Clean up caches to reduce image size
+ && go clean -cache -modcache \
  && npm cache clean --force \
  && rm -rf /var/cache/apk/*

@@ -1,4 +1,8 @@
 # runner image
+[![On push to main](https://github.com/kiloexabyte/runner-image/actions/workflows/push-to-main.yml/badge.svg)](https://github.com/kiloexabyte/runner-image/actions/workflows/push-to-main.yml)
+[![On PR Closed](https://github.com/kiloexabyte/runner-image/actions/workflows/pull-request-close.yml/badge.svg)](https://github.com/kiloexabyte/runner-image/actions/workflows/pull-request-close.yml)
+
+
 Image definition: [Dockerfile](Dockerfile)
 
 
