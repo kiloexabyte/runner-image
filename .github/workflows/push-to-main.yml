@@ -14,17 +14,11 @@ jobs:
     container: 
       image: kiloexabyte/runner-image:latest
     steps:
-    - name: Clone repo into subdirectory
-      run: |
-        git clone --depth=1 https://github.com/${{ github.repository }} repo
-        cd repo
-        git checkout ${{ github.ref_name }}
-        ls -lah
+    - uses: actions/checkout@v4
 
     - name: Upload Docker Image to Docker Hub
       env: 
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
-        cd repo
         op build_and_upload
