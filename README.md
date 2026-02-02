@@ -2,6 +2,7 @@
 [![On push to main](https://github.com/kiloexabyte/runner-image/actions/workflows/push-to-main.yml/badge.svg)](https://github.com/kiloexabyte/runner-image/actions/workflows/push-to-main.yml)
 [![On PR Closed](https://github.com/kiloexabyte/runner-image/actions/workflows/pull-request-close.yml/badge.svg)](https://github.com/kiloexabyte/runner-image/actions/workflows/pull-request-close.yml)
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=kiloexabyte_runner-image&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=kiloexabyte_runner-image)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=kiloexabyte_runner-image&metric=bugs)](https://sonarcloud.io/summary/new_code?id=kiloexabyte_runner-image)
 
 Image definition: [Dockerfile](Dockerfile)
 
