@@ -11,11 +11,8 @@ func (Ops) Prune() error {
 	ctx := context.Background() 
 	sh := command.Shell(sys.Machine(), "docker")
 
-	if err := sh.Exec(ctx, 
-		"docker", 
-		"image", 
-		"prune", 
-		"-f"); err != nil {
+	err := sh.Exec(ctx, "docker", "image", "prune", "-f")
+	if  err != nil {
     	return nil
     }
 
