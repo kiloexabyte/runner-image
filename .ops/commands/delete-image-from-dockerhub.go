@@ -10,8 +10,6 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
-	"lesiw.io/command"
-	"lesiw.io/command/sys"
 )
 
 func init() {
@@ -85,11 +83,8 @@ func (Ops) DeleteImage() {
 	}
 
 	ctx := context.Background()
-
-	m := sys.Machine()
 	token := fetchDockerToken()
 
-	// Delete image from Docker Hub using registry API
 	imageTag := "kiloexabyte/runner-image:" + tag
 	log.Printf("Deleting image: %s\n", imageTag)
 
@@ -97,15 +92,33 @@ func (Ops) DeleteImage() {
 		"kiloexabyte/runner-image/tags/" +
 		tag + "/"
 
-	if err := command.Do(
+	req, err := http.NewRequestWithContext(
 		ctx,
-		m,
-		"curl",
-		"-X", "DELETE",
-		"-H", "Authorization: Bearer "+token,
+		http.MethodDelete,
 		url,
-	); err != nil {
+		nil,
+	)
+	if err != nil {
 		log.Fatal(err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	// Docker Hub returns 204 No Content on success
+	if resp.StatusCode != http.StatusNoContent {
+		b, _ := io.ReadAll(resp.Body)
+		log.Fatalf(
+			"Failed to delete image tag %s: %s (%s)",
+			tag,
+			resp.Status,
+			strings.TrimSpace(string(b)),
+		)
 	}
 
 	log.Printf("Successfully deleted image tag: %s\n", tag)
