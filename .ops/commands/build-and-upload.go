@@ -2,13 +2,13 @@ package commands
 
 import "log"
 
-func (Ops) BuildAndUpload() {
-	err := Ops{}.Build()
+func (ops Ops) BuildAndUpload() {
+	err := ops.Build()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = Ops{}.Upload()
+	err = ops.Upload()
 	if err != nil {
 		log.Fatal(err)
 	}

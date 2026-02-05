@@ -2,13 +2,12 @@ package commands
 
 import (
 	"context"
-	"log"
 
 	"lesiw.io/command"
 	"lesiw.io/command/sys"
 )
 
-func (Ops) Prune() {
+func (Ops) Prune() error {
 	ctx := context.Background() 
 	sh := command.Shell(sys.Machine(), "docker")
 
@@ -17,6 +16,8 @@ func (Ops) Prune() {
 		"image", 
 		"prune", 
 		"-f"); err != nil {
-    	log.Fatal(err)
+    	return nil
     }
+
+	return nil
 }
