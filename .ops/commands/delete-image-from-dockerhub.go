@@ -3,6 +3,8 @@ package commands
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -19,12 +21,14 @@ func init() {
 	}
 }
 
-func fetchDockerToken() string {
+func fetchDockerToken() (string, error) {
 	user := os.Getenv("DOCKER_USERNAME")
 	pass := os.Getenv("DOCKER_PASSWORD")
 
 	if user == "" || pass == "" {
-		log.Fatal("DOCKER_USERNAME or DOCKER_PASSWORD is not set")
+		return "", fmt.Errorf(
+			"DOCKER_USERNAME or DOCKER_PASSWORD is not set",
+		)
 	}
 
 	body := strings.NewReader(
@@ -32,25 +36,25 @@ func fetchDockerToken() string {
 	)
 
 	req, err := http.NewRequest(
-		"POST",
+		http.MethodPost,
 		"https://hub.docker.com/v2/users/login/",
 		body,
 	)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
-		log.Fatalf(
+		return "", fmt.Errorf(
 			"Docker Hub auth failed: %s (%s)",
 			resp.Status,
 			strings.TrimSpace(string(b)),
@@ -62,17 +66,18 @@ func fetchDockerToken() string {
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	if result.Token == "" {
-		log.Fatal("Docker Hub returned an empty token")
+		return "", errors.New("Docker Hub returned an empty token")
 	}
 
-	return result.Token
+	return result.Token, nil
 }
 
-func (Ops) DeleteImage() {
+
+func (Ops) DeleteImage() error {
 	tag := os.Getenv("IMAGE_TAG")
 
 	if tag == "" {
@@ -83,7 +88,11 @@ func (Ops) DeleteImage() {
 	}
 
 	ctx := context.Background()
-	token := fetchDockerToken()
+	token, err := fetchDockerToken()
+
+	if err != nil {
+		return err
+	}
 
 	imageTag := "kiloexabyte/runner-image:" + tag
 	log.Printf("Deleting image: %s\n", imageTag)
@@ -99,14 +108,14 @@ func (Ops) DeleteImage() {
 		nil,
 	)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer resp.Body.Close()
 
@@ -122,4 +131,5 @@ func (Ops) DeleteImage() {
 	}
 
 	log.Printf("Successfully deleted image tag: %s\n", tag)
+	return nil
 }
