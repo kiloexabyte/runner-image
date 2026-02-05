@@ -26,8 +26,8 @@ func fetchDockerToken() (string, error) {
 	pass := os.Getenv("DOCKER_PASSWORD")
 
 	if user == "" || pass == "" {
-		return "", fmt.Errorf(
-			"DOCKER_USERNAME or DOCKER_PASSWORD is not set",
+		return "", errors.New(
+			"docker username or docker password is not set",
 		)
 	}
 
@@ -41,21 +41,21 @@ func fetchDockerToken() (string, error) {
 		body,
 	)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("create login request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("send login request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
 		return "", fmt.Errorf(
-			"Docker Hub auth failed: %s (%s)",
+			"docker hub auth failed: %s (%s)",
 			resp.Status,
 			strings.TrimSpace(string(b)),
 		)
@@ -66,16 +66,15 @@ func fetchDockerToken() (string, error) {
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", err
+		return "", fmt.Errorf("decode docker hub response: %w", err)
 	}
 
 	if result.Token == "" {
-		return "", errors.New("Docker Hub returned an empty token")
+		return "", errors.New("docker hub returned an empty token")
 	}
 
 	return result.Token, nil
 }
-
 
 func (Ops) DeleteImage() error {
 	tag := os.Getenv("IMAGE_TAG")
