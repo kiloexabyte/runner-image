@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -21,7 +22,7 @@ func init() {
 	}
 }
 
-func fetchDockerToken() (string, error) {
+func fetchDockerToken(ctx context.Context) (string, error) {
 	user := os.Getenv("DOCKER_USERNAME")
 	pass := os.Getenv("DOCKER_PASSWORD")
 
@@ -31,14 +32,24 @@ func fetchDockerToken() (string, error) {
 		)
 	}
 
-	body := strings.NewReader(
-		`{"username":"` + user + `","password":"` + pass + `"}`,
-	)
+	creds := struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}{
+		Username: user,
+		Password: pass,
+	}
 
-	req, err := http.NewRequest(
+	body, err := json.Marshal(creds)
+	if err != nil {
+		return "", fmt.Errorf("marshal credentials: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(
+		ctx,
 		http.MethodPost,
 		"https://hub.docker.com/v2/users/login/",
-		body,
+		bytes.NewReader(body),
 	)
 	if err != nil {
 		return "", fmt.Errorf("create login request: %w", err)
@@ -80,21 +91,21 @@ func (Ops) DeleteImage() error {
 	tag := os.Getenv("IMAGE_TAG")
 
 	if tag == "" {
-		log.Fatal(
-			"Please provide a tag with -tag flag " +
+		return fmt.Errorf(
+			"please provide a tag with -tag flag " +
 				"(e.g., op deleteimage -tag PR32)",
 		)
 	}
 
 	ctx := context.Background()
-	token, err := fetchDockerToken()
+	token, err := fetchDockerToken(ctx)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("fetch docker token: %w", err)
 	}
 
 	imageTag := "kiloexabyte/runner-image:" + tag
-	log.Printf("Deleting image: %s\n", imageTag)
+	log.Printf("Deleting image: %s", imageTag)
 
 	url := "https://hub.docker.com/v2/repositories/" +
 		"kiloexabyte/runner-image/tags/" +
@@ -107,28 +118,28 @@ func (Ops) DeleteImage() error {
 		nil,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("create delete request: %w", err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("send delete request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Docker Hub returns 204 No Content on success
 	if resp.StatusCode != http.StatusNoContent {
 		b, _ := io.ReadAll(resp.Body)
-		log.Fatalf(
-			"Failed to delete image tag %s: %s (%s)",
+		return fmt.Errorf(
+			"delete image tag %s: %s (%s)",
 			tag,
 			resp.Status,
 			strings.TrimSpace(string(b)),
 		)
 	}
 
-	log.Printf("Successfully deleted image tag: %s\n", tag)
+	log.Printf("Successfully deleted image tag: %s", tag)
 	return nil
 }
