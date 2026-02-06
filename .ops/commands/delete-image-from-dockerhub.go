@@ -1,8 +1,11 @@
 package commands
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -10,8 +13,6 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
-	"lesiw.io/command"
-	"lesiw.io/command/sys"
 )
 
 func init() {
@@ -21,39 +22,51 @@ func init() {
 	}
 }
 
-func fetchDockerToken() string {
+func fetchDockerToken(ctx context.Context) (string, error) {
 	user := os.Getenv("DOCKER_USERNAME")
 	pass := os.Getenv("DOCKER_PASSWORD")
 
 	if user == "" || pass == "" {
-		log.Fatal("DOCKER_USERNAME or DOCKER_PASSWORD is not set")
+		return "", errors.New(
+			"docker username or docker password is not set",
+		)
 	}
 
-	body := strings.NewReader(
-		`{"username":"` + user + `","password":"` + pass + `"}`,
-	)
+	creds := struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}{
+		Username: user,
+		Password: pass,
+	}
 
-	req, err := http.NewRequest(
-		"POST",
+	body, err := json.Marshal(creds)
+	if err != nil {
+		return "", fmt.Errorf("marshal credentials: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
 		"https://hub.docker.com/v2/users/login/",
-		body,
+		bytes.NewReader(body),
 	)
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("create login request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("send login request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
-		log.Fatalf(
-			"Docker Hub auth failed: %s (%s)",
+		return "", fmt.Errorf(
+			"docker hub auth failed: %s (%s)",
 			resp.Status,
 			strings.TrimSpace(string(b)),
 		)
@@ -64,49 +77,69 @@ func fetchDockerToken() string {
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("decode docker hub response: %w", err)
 	}
 
 	if result.Token == "" {
-		log.Fatal("Docker Hub returned an empty token")
+		return "", errors.New("docker hub returned an empty token")
 	}
 
-	return result.Token
+	return result.Token, nil
 }
 
-func (Ops) DeleteImage() {
+func (Ops) DeleteImage() error {
 	tag := os.Getenv("IMAGE_TAG")
 
 	if tag == "" {
-		log.Fatal(
-			"Please provide a tag with -tag flag " +
+		return fmt.Errorf(
+			"please provide a tag with -tag flag " +
 				"(e.g., op deleteimage -tag PR32)",
 		)
 	}
 
 	ctx := context.Background()
+	token, err := fetchDockerToken(ctx)
 
-	m := sys.Machine()
-	token := fetchDockerToken()
+	if err != nil {
+		return fmt.Errorf("fetch docker token: %w", err)
+	}
 
-	// Delete image from Docker Hub using registry API
 	imageTag := "kiloexabyte/runner-image:" + tag
-	log.Printf("Deleting image: %s\n", imageTag)
+	log.Printf("Deleting image: %s", imageTag)
 
 	url := "https://hub.docker.com/v2/repositories/" +
 		"kiloexabyte/runner-image/tags/" +
 		tag + "/"
 
-	if err := command.Do(
+	req, err := http.NewRequestWithContext(
 		ctx,
-		m,
-		"curl",
-		"-X", "DELETE",
-		"-H", "Authorization: Bearer "+token,
+		http.MethodDelete,
 		url,
-	); err != nil {
-		log.Fatal(err)
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("create delete request: %w", err)
 	}
 
-	log.Printf("Successfully deleted image tag: %s\n", tag)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("send delete request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Docker Hub returns 204 No Content on success
+	if resp.StatusCode != http.StatusNoContent {
+		b, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf(
+			"delete image tag %s: %s (%s)",
+			tag,
+			resp.Status,
+			strings.TrimSpace(string(b)),
+		)
+	}
+
+	log.Printf("Successfully deleted image tag: %s", tag)
+	return nil
 }

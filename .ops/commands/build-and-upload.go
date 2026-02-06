@@ -1,15 +1,17 @@
 package commands
 
-import "log"
+import "fmt"
 
-func (ops Ops) BuildAndUpload() {
+func (ops Ops) BuildAndUpload() error {
 	err := ops.Build()
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("build: %w", err)
 	}
 
 	err = ops.Upload()
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("upload: %w", err)
 	}
+
+	return nil
 }
