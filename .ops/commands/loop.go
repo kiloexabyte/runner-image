@@ -39,6 +39,7 @@ func (Ops) Loop() error {
 		// Run claude with full autonomy
 		err := sh.Exec(ctx, "claude", "-p", prompt,
 			"--dangerously-skip-permissions",
+			"--verbose",
 		)
 		if err != nil {
 			lastError = fmt.Sprintf("claude failed: %v", err)
