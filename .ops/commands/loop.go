@@ -31,7 +31,10 @@ func (Ops) Loop() error {
 		// Build prompt with previous error context
 		prompt := task
 		if lastError != "" {
-			prompt = fmt.Sprintf("%s\n\nPrevious attempt failed with:\n%s\n\nTry a different approach.", task, lastError)
+			prompt = task +
+				"\n\nPrevious attempt failed with:\n" +
+				lastError +
+				"\n\nTry a different approach."
 		}
 
 		// Run copilot with full autonomy
@@ -83,7 +86,10 @@ func checkSuccess(ctx context.Context, m command.Machine) error {
 	}
 
 	if len(failures) > 0 {
-		return fmt.Errorf("success conditions not met:\n%s", strings.Join(failures, "\n"))
+		return fmt.Errorf(
+			"success conditions not met:\n%s",
+			strings.Join(failures, "\n"),
+		)
 	}
 
 	return nil
