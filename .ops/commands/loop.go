@@ -14,6 +14,14 @@ import (
 
 func (Ops) Loop() error {
 	ctx := context.Background()
+
+	// Add GitHub CLI to PATH
+	path := os.Getenv("PATH")
+	ghPath := `C:\Program Files\GitHub CLI`
+	ctx = command.WithEnv(ctx, map[string]string{
+		"PATH": path + ";" + ghPath,
+	})
+
 	m := sys.Machine()
 	sh := command.Shell(m, "gh", "go", "op")
 
