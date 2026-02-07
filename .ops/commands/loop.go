@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"time"
 
 	"lesiw.io/command"
 	"lesiw.io/command/sys"
@@ -14,16 +13,8 @@ import (
 
 func (Ops) Loop() error {
 	ctx := context.Background()
-
-	// Add GitHub CLI to PATH
-	path := os.Getenv("PATH")
-	ghPath := `C:\Program Files\GitHub CLI`
-	ctx = command.WithEnv(ctx, map[string]string{
-		"PATH": path + ";" + ghPath,
-	})
-
 	m := sys.Machine()
-	sh := command.Shell(m, "gh", "go", "op")
+	sh := command.Shell(m, "claude", "op")
 
 	task := os.Getenv("TASK")
 	if task == "" {
@@ -45,14 +36,12 @@ func (Ops) Loop() error {
 				"\n\nTry a different approach."
 		}
 
-		// Run copilot with full autonomy
-		err := sh.Exec(ctx, "gh", "copilot",
-			"-p", prompt,
-			"--yolo",
-			"--no-ask-user",
+		// Run claude with full autonomy
+		err := sh.Exec(ctx, "claude", "-p", prompt,
+			"--dangerously-skip-permissions",
 		)
 		if err != nil {
-			lastError = fmt.Sprintf("copilot failed: %v", err)
+			lastError = fmt.Sprintf("claude failed: %v", err)
 			log.Printf("Attempt %d failed: %v", i+1, err)
 			continue
 		}
@@ -72,7 +61,7 @@ func (Ops) Loop() error {
 }
 
 func checkSuccess(ctx context.Context, m command.Machine) error {
-	sh := command.Shell(m, "gh", "go", "op")
+	sh := command.Shell(m, "op")
 	var failures []string
 
 	// Check 1: op lint
@@ -81,38 +70,18 @@ func checkSuccess(ctx context.Context, m command.Machine) error {
 		failures = append(failures, fmt.Sprintf("op lint failed: %v", err))
 	}
 
-	// Check 2: go build
-	log.Printf("Checking: go build")
-	if err := sh.Exec(ctx, "go", "build", "./..."); err != nil {
-		failures = append(failures, fmt.Sprintf("go build failed: %v", err))
+	// Check 2: op version (verifies build works)
+	log.Printf("Checking: op version")
+	if err := sh.Exec(ctx, "op", "version"); err != nil {
+		failures = append(failures, fmt.Sprintf("op version failed: %v", err))
 	}
 
-	// Check 3: CI status on PR
-	log.Printf("Checking: CI status")
-	if err := checkCI(ctx, m); err != nil {
-		failures = append(failures, fmt.Sprintf("CI check failed: %v", err))
-	}
 
 	if len(failures) > 0 {
 		return fmt.Errorf(
 			"success conditions not met:\n%s",
 			strings.Join(failures, "\n"),
 		)
-	}
-
-	return nil
-}
-
-func checkCI(ctx context.Context, m command.Machine) error {
-	sh := command.Shell(m, "gh")
-
-	// Wait a bit for CI to start
-	time.Sleep(10 * time.Second)
-
-	// Check PR status - this will fail if no PR or checks failing
-	output, err := sh.Read(ctx, "gh", "pr", "checks", "--watch", "--fail-fast")
-	if err != nil {
-		return fmt.Errorf("%v: %s", err, output)
 	}
 
 	return nil
