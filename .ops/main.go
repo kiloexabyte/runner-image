@@ -2,9 +2,9 @@ package main
 
 import (
 	"lesiw.io/ops"
-	commands "ops/commands"
+	"ops/composite"
 )
 
 func main() {
-	ops.Handle(commands.Ops{})
+	ops.Handle(composite.Ops{})
 }
