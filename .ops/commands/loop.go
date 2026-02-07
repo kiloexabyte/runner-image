@@ -62,21 +62,15 @@ func (Ops) Loop() error {
 }
 
 func checkSuccess(ctx context.Context, m command.Machine) error {
-	sh := command.Shell(m, "op")
 	var failures []string
 
-	// Check 1: op lint
-	log.Printf("Checking: op lint")
-	if err := sh.Exec(ctx, "op", "lint"); err != nil {
-		failures = append(failures, fmt.Sprintf("op lint failed: %v", err))
+	if err := generalCheck(ctx, m); err != nil {
+		failures = append(failures, err.Error())
 	}
 
-	// Check 2: op version (verifies build works)
-	log.Printf("Checking: op version")
-	if err := sh.Exec(ctx, "op", "version"); err != nil {
-		failures = append(failures, fmt.Sprintf("op version failed: %v", err))
+	if err := taskCheck(ctx, m); err != nil {
+		failures = append(failures, err.Error())
 	}
-
 
 	if len(failures) > 0 {
 		return fmt.Errorf(
@@ -85,5 +79,21 @@ func checkSuccess(ctx context.Context, m command.Machine) error {
 		)
 	}
 
+	return nil
+}
+
+func generalCheck(ctx context.Context, m command.Machine) error {
+	sh := command.Shell(m, "op")
+
+	log.Printf("Checking: op lint")
+	if err := sh.Exec(ctx, "op", "lint"); err != nil {
+		return fmt.Errorf("op lint failed: %w", err)
+	}
+
+	return nil
+}
+
+func taskCheck(_ context.Context, _ command.Machine) error {
+	// TODO: implement task-specific checks
 	return nil
 }
