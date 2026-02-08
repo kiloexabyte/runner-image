@@ -64,6 +64,6 @@ func (Ops) Upload() error {
 		imageTag); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
