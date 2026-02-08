@@ -16,16 +16,26 @@ func (Ops) Loop() error {
 	m := sys.Machine()
 	sh := command.Shell(m, "claude", "op")
 
-	task := os.Getenv("TASK")
-	if task == "" {
-		return fmt.Errorf("TASK environment variable is required")
+	// Read task from file or env var
+	task, err := getTask()
+	if err != nil {
+		return err
+	}
+
+	// Setup output file if specified
+	outputFile, err := setupOutputFile()
+	if err != nil {
+		return err
+	}
+	if outputFile != nil {
+		defer outputFile.Close()
 	}
 
 	maxIterations := 50
 	var lastError string
 
 	for i := range maxIterations {
-		log.Printf("=== Iteration %d ===", i+1)
+		logOutput(outputFile, "=== Iteration %d ===", i+1)
 
 		// Build prompt with previous error context
 		prompt := task
@@ -36,29 +46,89 @@ func (Ops) Loop() error {
 				"\n\nTry a different approach."
 		}
 
-		// Run claude with full autonomy
-		err := sh.Exec(ctx, "claude", "-p", prompt,
+		// Run claude and capture output
+		output, err := sh.Read(ctx, "claude", "-p", prompt,
 			"--dangerously-skip-permissions",
 			"--verbose",
 		)
+
+		// Write claude's output
+		if output != "" {
+			logOutput(outputFile, "%s", output)
+		}
+
 		if err != nil {
 			lastError = fmt.Sprintf("claude failed: %v", err)
-			log.Printf("Attempt %d failed: %v", i+1, err)
+			logOutput(outputFile, "Attempt %d failed: %v", i+1, err)
 			continue
 		}
 
 		// Check success conditions
 		if err := checkSuccess(ctx, m); err != nil {
 			lastError = err.Error()
-			log.Printf("Success check failed: %v", err)
+			logOutput(outputFile, "Success check failed: %v", err)
 			continue
 		}
 
-		log.Printf("Task completed successfully")
+		logOutput(outputFile, "Task completed successfully")
 		return nil
 	}
 
 	return fmt.Errorf("failed after %d iterations", maxIterations)
+}
+
+func getTask() (string, error) {
+	// Check env var first
+	if task := os.Getenv("TASK"); task != "" {
+		return task, nil
+	}
+
+	// Try task file (env var or default)
+	taskFile := os.Getenv("TASK_FILE")
+	if taskFile == "" {
+		taskFile = "task.txt"
+	}
+
+	content, err := os.ReadFile(taskFile)
+	if err != nil {
+		return "", fmt.Errorf(
+			"read task file %s: %w (set TASK env var or create task.txt)",
+			taskFile,
+			err,
+		)
+	}
+
+	task := strings.TrimSpace(string(content))
+	if task == "" {
+		return "", fmt.Errorf("task file %s is empty", taskFile)
+	}
+
+	return task, nil
+}
+
+func setupOutputFile() (*os.File, error) {
+	outputPath := os.Getenv("OUTPUT_FILE")
+	if outputPath == "" {
+		return nil, nil
+	}
+
+	f, err := os.OpenFile(
+		outputPath,
+		os.O_CREATE|os.O_WRONLY|os.O_APPEND,
+		0644,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("open output file: %w", err)
+	}
+	return f, nil
+}
+
+func logOutput(f *os.File, format string, args ...any) {
+	msg := fmt.Sprintf(format, args...)
+	log.Print(msg)
+	if f != nil {
+		fmt.Fprintln(f, msg)
+	}
 }
 
 func checkSuccess(ctx context.Context, m command.Machine) error {
