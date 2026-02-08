@@ -46,17 +46,10 @@ func (Ops) Loop() error {
 				"\n\nTry a different approach."
 		}
 
-		// Run claude and capture output
-		output, err := sh.Read(ctx, "claude", "-p", prompt,
+		// Run claude
+		err := sh.Exec(ctx, "claude", "-p", prompt,
 			"--dangerously-skip-permissions",
-			"--verbose",
 		)
-
-		// Write claude's output
-		if output != "" {
-			logOutput(outputFile, "%s", output)
-		}
-
 		if err != nil {
 			lastError = fmt.Sprintf("claude failed: %v", err)
 			logOutput(outputFile, "Attempt %d failed: %v", i+1, err)
