@@ -18,13 +18,13 @@ func (Ops) Build() error {
 	}
 	imageTag := "kiloexabyte/runner-image:" + tag
 
-	err := sh.Exec(ctx, "docker", "build", "-t", imageTag, ".");
+	err := sh.Exec(ctx, "docker", "build", "-t", imageTag, ".")
 	if err != nil {
 		return err
 	}
 
-	err = sh.Exec(ctx, "docker", "images", imageTag, "--format", 
-		"Image Size: {{.Size}}");
+	err = sh.Exec(ctx, "docker", "images", imageTag, "--format",
+		"Image Size: {{.Size}}")
 	if err != nil {
 		return err
 	}

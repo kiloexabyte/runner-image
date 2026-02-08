@@ -2,3 +2,5 @@
 ci.yml
 .vscode/mcp.json
 .claude
+task.txt
+output.log
