@@ -30,10 +30,10 @@ RUN apk add --no-cache \
  # Install the 'op' tool
  && go install lesiw.io/op@latest \
  && go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6 \
- # Display versions during build
  # Install pnpm
  && wget -qO- https://get.pnpm.io/install.sh | ENV="$HOME/.shrc" SHELL=/bin/sh sh - \
  && ln -s $HOME/.local/share/pnpm/pnpm /usr/local/bin/pnpm \
+ # Display versions during build
  && go version && node -v && pnpm -v \
  # Clean up caches to reduce image size
  && go clean -cache -modcache \
