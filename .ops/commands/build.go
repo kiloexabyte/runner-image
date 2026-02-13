@@ -16,6 +16,7 @@ const (
 	terraformVersion = "1.8.4"
 	terraformURL     = "https://releases.hashicorp.com/terraform"
 	golangcilint     = "github.com/golangci/golangci-lint/v2/cmd/golangci-lint"
+	goBin            = "/usr/local/go/bin/go"
 )
 
 type builder struct {
@@ -44,7 +45,8 @@ func (Ops) Build() error {
 		ctx: ctx,
 		m:   m,
 		sh: command.Shell(
-			m, "apk", "curl", "tar", "wget", "unzip", "go", "npm", "rm",
+			m, "apk", "curl", "tar", "wget", "unzip", goBin,
+			"npm", "rm", "mkdir",
 		),
 	}
 
@@ -95,7 +97,10 @@ func (b *builder) installGo() error {
 		"tar", "-C", "/usr/local", "-xzf", tarball); err != nil {
 		return err
 	}
-	return b.sh.Exec(b.ctx, "rm", tarball)
+	if err := b.sh.Exec(b.ctx, "rm", tarball); err != nil {
+		return err
+	}
+	return b.sh.Exec(b.ctx, "mkdir", "-p", "/go/src", "/go/bin", "/go/pkg")
 }
 
 func (b *builder) installTerraform() error {
@@ -115,10 +120,10 @@ func (b *builder) installTerraform() error {
 func (b *builder) installGoTools() error {
 	fmt.Println("Installing Go tools...")
 	if err := b.sh.Exec(b.ctx,
-		"go", "install", "lesiw.io/op@latest"); err != nil {
+		goBin, "install", "lesiw.io/op@latest"); err != nil {
 		return err
 	}
-	return b.sh.Exec(b.ctx, "go", "install", golangcilint+"@v2.1.6")
+	return b.sh.Exec(b.ctx, goBin, "install", golangcilint+"@v2.1.6")
 }
 
 func (b *builder) installPnpm() error {
@@ -128,7 +133,7 @@ func (b *builder) installPnpm() error {
 
 func (b *builder) displayVersions() error {
 	fmt.Println("Displaying versions...")
-	if err := b.sh.Exec(b.ctx, "go", "version"); err != nil {
+	if err := b.sh.Exec(b.ctx, goBin, "version"); err != nil {
 		return err
 	}
 	if err := command.Do(b.ctx, b.m, "node", "-v"); err != nil {
@@ -140,7 +145,7 @@ func (b *builder) displayVersions() error {
 func (b *builder) cleanup() error {
 	fmt.Println("Cleaning up caches...")
 	if err := b.sh.Exec(b.ctx,
-		"go", "clean", "-cache", "-modcache"); err != nil {
+		goBin, "clean", "-cache", "-modcache"); err != nil {
 		return err
 	}
 	if err := b.sh.Exec(b.ctx,
