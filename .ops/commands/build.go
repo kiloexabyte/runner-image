@@ -65,6 +65,9 @@ func (Ops) Build() error {
 	if err := b.installPnpm(); err != nil {
 		return err
 	}
+	if err := b.installBun(); err != nil {
+		return err
+	}
 	if err := b.displayVersions(); err != nil {
 		return err
 	}
@@ -131,6 +134,11 @@ func (b *builder) installPnpm() error {
 	return b.sh.Exec(b.ctx, "npm", "install", "-g", "pnpm")
 }
 
+func (b *builder) installBun() error {
+	fmt.Println("Installing bun...")
+	return b.sh.Exec(b.ctx, "npm", "install", "-g", "bun")
+}
+
 func (b *builder) displayVersions() error {
 	fmt.Println("Displaying versions...")
 	if err := b.sh.Exec(b.ctx, goBin, "version"); err != nil {
@@ -139,7 +147,10 @@ func (b *builder) displayVersions() error {
 	if err := command.Do(b.ctx, b.m, "node", "-v"); err != nil {
 		return err
 	}
-	return command.Do(b.ctx, b.m, "pnpm", "-v")
+	if err := command.Do(b.ctx, b.m, "pnpm", "-v"); err != nil {
+		return err
+	}
+	return command.Do(b.ctx, b.m, "bun", "--version")
 }
 
 func (b *builder) cleanup() error {
