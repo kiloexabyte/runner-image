@@ -1,0 +1,2 @@
+Add a Version command in .ops/commands/version.go that prints the current git commit hash.
+Use lesiw.io/command to run "git rev-parse HEAD" and print the result.
